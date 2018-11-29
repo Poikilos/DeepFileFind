@@ -1,3 +1,14 @@
+# OS-generated files
+.desktop
+
+# Netbeans
+**/nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
 # Compiled class file
 *.class
 
