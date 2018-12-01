@@ -17,14 +17,14 @@ import java.util.TimeZone;
  * User: jgustafson
  * Date: 3/23/2017
  * Time: 5:48 PM
- * 
+ *
  * To change this template use Tools | Options | Coding | Edit Standard Headers.
  */
 //using System.Diagnostics; //System.Diagnostics.Debug.WriteLine etc
 /**
 * Description of DFFSearchOptions.
 */
-public class DFFSearchOptions   
+public class DFFSearchOptions
 {
     /**
     * MUST be UTC
@@ -50,7 +50,7 @@ public class DFFSearchOptions
     public boolean max_size_enable = false;
     public long min_size = 0;
     public long max_size = Long.MAX_VALUE;
-    //public System.Windows.Forms.TextBox statusTextBox = null;
+    //public System.Windows.Forms.TextBox statusTextField = null;
     public boolean follow_folder_symlinks_enable = false;
     public boolean search_inside_hidden_files_enable = false;
     public boolean follow_dot_folders_enable = true;

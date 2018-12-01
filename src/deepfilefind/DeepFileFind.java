@@ -5,19 +5,43 @@
  */
 package deepfilefind;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.table.DefaultTableModel;
+
 /**
  *
  * @author owner
  */
 public class DeepFileFind extends javax.swing.JFrame {
-
+    DFF dff;
+    
+    boolean maxSizeCheckBoxAutoEnabled = false;
     /**
      * Creates new form DeepFileFind
      */
     public DeepFileFind() {
         initComponents();
+        this.setTitle("DeepFileFind");
+        dff = new DFF();
+        for (String line : dff.locations) {
+            this.locationComboBox.addItem(line);
+        }
+        if (dff.profilePath!=null) {
+            DefaultComboBoxModel model = (DefaultComboBoxModel)this.locationComboBox.getModel();
+            if (model.getIndexOf(dff.profilePath) < 0)
+                this.locationComboBox.addItem(dff.profilePath);
+        }
+        // select most recent:
+        this.locationComboBox.setSelectedIndex(this.locationComboBox.getItemCount()-1);
+        DFFShutdownHook dffsh = new DFFShutdownHook();
+        dffsh.app = this;
+        Runtime.getRuntime().addShutdownHook(dffsh);
     }
 
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -29,17 +53,24 @@ public class DeepFileFind extends javax.swing.JFrame {
 
         jSplitPane1 = new javax.swing.JSplitPane();
         jPanel1 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        resultsTable = new javax.swing.JTable();
         jPanel2 = new javax.swing.JPanel();
         nameTextField = new javax.swing.JTextField();
         findButton = new javax.swing.JButton();
         cancelButton = new javax.swing.JButton();
-        jCheckBox1 = new javax.swing.JCheckBox();
-        jCheckBox2 = new javax.swing.JCheckBox();
+        foldersCheckBox = new javax.swing.JCheckBox();
+        recursiveCheckBox = new javax.swing.JCheckBox();
         jLabel1 = new javax.swing.JLabel();
-        jTextField3 = new javax.swing.JTextField();
+        contentTextField = new javax.swing.JTextField();
+        locationComboBox = new javax.swing.JComboBox<>();
+        contentCheckBox = new javax.swing.JCheckBox();
         jLabel2 = new javax.swing.JLabel();
-        jTextField4 = new javax.swing.JTextField();
-        jTextField1 = new javax.swing.JTextField();
+        minSizeCheckBox = new javax.swing.JCheckBox();
+        minSizeTextField = new javax.swing.JTextField();
+        maxSizeTextField = new javax.swing.JTextField();
+        maxSizeCheckBox = new javax.swing.JCheckBox();
+        statusTextField = new javax.swing.JTextField();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
@@ -54,33 +85,91 @@ public class DeepFileFind extends javax.swing.JFrame {
 
         jSplitPane1.setDividerLocation(350);
 
+        resultsTable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+                "Path", "Ext", "Modified", "Created", "Name"
+            }
+        ));
+        jScrollPane1.setViewportView(resultsTable);
+        if (resultsTable.getColumnModel().getColumnCount() > 0) {
+            resultsTable.getColumnModel().getColumn(0).setPreferredWidth(400);
+        }
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 435, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 462, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 408, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 434, Short.MAX_VALUE)
         );
 
         jSplitPane1.setRightComponent(jPanel1);
 
+        nameTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                nameTextFieldActionPerformed(evt);
+            }
+        });
+
         findButton.setText("Find");
+        findButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                findButtonActionPerformed(evt);
+            }
+        });
 
         cancelButton.setText("Cancel");
+        cancelButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelButtonActionPerformed(evt);
+            }
+        });
 
-        jCheckBox1.setText("Include folders as results");
+        foldersCheckBox.setText("Include folders as results");
 
-        jCheckBox2.setSelected(true);
-        jCheckBox2.setText("Search Subfolders");
+        recursiveCheckBox.setSelected(true);
+        recursiveCheckBox.setText("Search Subfolders");
 
         jLabel1.setText("Location(s):");
 
-        jTextField3.setToolTipText("if multiple, separate paths by semicolons");
+        contentTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                contentTextFieldActionPerformed(evt);
+            }
+        });
+        contentTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                contentTextFieldKeyTyped(evt);
+            }
+        });
 
-        jLabel2.setText("Content:");
+        locationComboBox.setEditable(true);
+
+        contentCheckBox.setText("Contains:");
+        contentCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                contentCheckBoxActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setText("Size:");
+
+        minSizeCheckBox.setText("Min");
+
+        maxSizeTextField.setText("2048000");
+
+        maxSizeCheckBox.setText("Max");
+        maxSizeCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                maxSizeCheckBoxActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -90,25 +179,34 @@ public class DeepFileFind extends javax.swing.JFrame {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(nameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 183, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(jLabel1)
+                            .addComponent(contentCheckBox))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(locationComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(contentTextField)))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addGap(59, 59, 59)
+                        .addComponent(minSizeCheckBox)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(minSizeTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(maxSizeCheckBox)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(maxSizeTextField))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(nameTextField)
+                            .addComponent(foldersCheckBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(recursiveCheckBox)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                                 .addComponent(findButton)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(cancelButton))
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(jCheckBox1)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jCheckBox2)))
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel1)
-                            .addComponent(jLabel2))
-                        .addGap(4, 4, 4)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jTextField4)
-                            .addComponent(jTextField3))))
+                                .addComponent(cancelButton)))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -120,25 +218,31 @@ public class DeepFileFind extends javax.swing.JFrame {
                     .addComponent(cancelButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jCheckBox1)
-                    .addComponent(jCheckBox2))
+                    .addComponent(foldersCheckBox)
+                    .addComponent(recursiveCheckBox))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
-                    .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(locationComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(contentTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(contentCheckBox))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
-                    .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 312, Short.MAX_VALUE))
+                    .addComponent(minSizeCheckBox)
+                    .addComponent(minSizeTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(maxSizeCheckBox)
+                    .addComponent(maxSizeTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(0, 302, Short.MAX_VALUE))
         );
 
         jSplitPane1.setLeftComponent(jPanel2);
 
-        jTextField1.setText("jTextField1");
-        jTextField1.setMaximumSize(new java.awt.Dimension(20, 2147483647));
-        jTextField1.setMinimumSize(new java.awt.Dimension(4, 20));
-        jTextField1.setName(""); // NOI18N
+        statusTextField.setMaximumSize(new java.awt.Dimension(20, 2147483647));
+        statusTextField.setMinimumSize(new java.awt.Dimension(4, 20));
+        statusTextField.setName(""); // NOI18N
 
         jMenu1.setText("File");
 
@@ -177,19 +281,72 @@ public class DeepFileFind extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jSplitPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 796, Short.MAX_VALUE)
-            .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jSplitPane1, javax.swing.GroupLayout.Alignment.TRAILING)
+            .addComponent(statusTextField, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jSplitPane1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(statusTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+    
+    private void findButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_findButtonActionPerformed
+        this.executeSearch();
+    }//GEN-LAST:event_findButtonActionPerformed
+
+    private void cancelButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelButtonActionPerformed
+        //if (dff.searchThread!=null) {
+            //dff.searchThread.in
+        //}
+        if (dff!=null) dff.enable = false;
+    }//GEN-LAST:event_cancelButtonActionPerformed
+
+    private void contentCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_contentCheckBoxActionPerformed
+        if (this.contentCheckBox.isSelected()) {
+            if (!this.maxSizeCheckBox.isSelected()) maxSizeCheckBoxAutoEnabled = true;
+            //else maxSizeCheckBoxAutoEnabled = false;
+            this.maxSizeCheckBox.setSelected(true);
+        }
+        else {
+            if (maxSizeCheckBoxAutoEnabled) {
+                this.maxSizeCheckBox.setSelected(false);
+                maxSizeCheckBoxAutoEnabled = false;
+            }
+        }
+    }//GEN-LAST:event_contentCheckBoxActionPerformed
+
+    private void contentTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_contentTextFieldActionPerformed
+        this.executeSearch();
+    }//GEN-LAST:event_contentTextFieldActionPerformed
+
+    private void nameTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nameTextFieldActionPerformed
+        this.executeSearch();
+    }//GEN-LAST:event_nameTextFieldActionPerformed
+
+    private void contentTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_contentTextFieldKeyTyped
+        if (this.contentTextField.getText().trim().length()==0) {
+            this.contentCheckBox.setSelected(false);
+            if (maxSizeCheckBoxAutoEnabled) {
+                this.maxSizeCheckBox.setSelected(false);
+                maxSizeCheckBoxAutoEnabled = false;
+            }
+        }
+        else {
+            this.contentCheckBox.setSelected(true);
+            if (!this.maxSizeCheckBox.isSelected()) maxSizeCheckBoxAutoEnabled = true;
+            //else maxSizeCheckBoxAutoEnabled = false;
+            this.maxSizeCheckBox.setSelected(true);
+        }
+    }//GEN-LAST:event_contentTextFieldKeyTyped
+
+    private void maxSizeCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_maxSizeCheckBoxActionPerformed
+        maxSizeCheckBoxAutoEnabled = false;
+    }//GEN-LAST:event_maxSizeCheckBoxActionPerformed
 
     /**
      * @param args the command line arguments
@@ -228,9 +385,10 @@ public class DeepFileFind extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton cancelButton;
+    private javax.swing.JCheckBox contentCheckBox;
+    private javax.swing.JTextField contentTextField;
     private javax.swing.JButton findButton;
-    private javax.swing.JCheckBox jCheckBox1;
-    private javax.swing.JCheckBox jCheckBox2;
+    private javax.swing.JCheckBox foldersCheckBox;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu1;
@@ -244,10 +402,60 @@ public class DeepFileFind extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSplitPane jSplitPane1;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField3;
-    private javax.swing.JTextField jTextField4;
+    private javax.swing.JComboBox<String> locationComboBox;
+    private javax.swing.JCheckBox maxSizeCheckBox;
+    private javax.swing.JTextField maxSizeTextField;
+    private javax.swing.JCheckBox minSizeCheckBox;
+    private javax.swing.JTextField minSizeTextField;
     private javax.swing.JTextField nameTextField;
+    private javax.swing.JCheckBox recursiveCheckBox;
+    private javax.swing.JTable resultsTable;
+    private javax.swing.JTextField statusTextField;
     // End of variables declaration//GEN-END:variables
+
+    void saveState() {
+        if (dff != null) {
+            //DefaultComboBoxModel model = (DefaultComboBoxModel)this.locationComboBox.getModel();
+            ComboBoxModel<String> model = this.locationComboBox.getModel();
+            for(int i=0; i<model.getSize(); i++) {
+                String element = model.getElementAt(i);
+                //System.out.println("adding '" + element + "'");
+                if (dff.locations.indexOf(element) < 0)
+                    dff.locations.add(element);
+            }
+            String element = (String)locationComboBox.getEditor().getItem();
+            if (element != null) {
+                //if not an item but was typed manually
+                if (dff.locations.indexOf(element) < 0)
+                    dff.locations.add(element);
+                //System.out.println("manually adding '" + element + "'");
+            }
+            dff.saveState();
+        }
+    }
+    
+    void executeSearch() {
+        //this.resultsTable.removeAll(); //doesn't work
+        DefaultTableModel model = (DefaultTableModel)resultsTable.getModel();
+        model.setRowCount(0);        
+        dff.options.put("name_string", this.nameTextField.getText());
+        dff.options.put("location_paths", "");
+        //if (this.locationComboBox.getSelectedItem()!=null)
+            //dff.options.put("location_paths", this.locationComboBox.getSelectedItem().toString());
+        //NOTE: getSelectedItem does NOT work for item currently being edited, so:
+        dff.options.put("location_paths", (String)locationComboBox.getEditor().getItem());
+        //getSelectedItem: You can get the selected or typed value from a JComboBox by calling method getSelectedItem . If it is not an existing item, then you'll get a String object. Otherwise you'll get whatever object you populated the combo box with.
+        dff.options.put("content_string", this.contentTextField.getText());
+        dff.options.put("content_enable", this.contentCheckBox.isSelected()?"true":"false");
+        dff.options.put("include_folders_as_results_enable", this.foldersCheckBox.isSelected() ? "true" : "false");
+        dff.options.put("recursive_enable", this.recursiveCheckBox.isSelected() ? "true" : "false");
+        
+        DFFMatchEventListener mListener = new DFFMatchEventListener();
+        mListener.table = this.resultsTable;
+        mListener.statusTextField = this.statusTextField;
+        dff.registerOnGeekEventListener(mListener); 
+        dff.executeSearch(); 
+    }
 }
