@@ -5,11 +5,15 @@
  */
 package deepfilefind;
 
+import java.awt.Color;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.JTextComponent;
 
 /**
  *
@@ -17,6 +21,7 @@ import javax.swing.table.DefaultTableModel;
  */
 public class DeepFileFind extends javax.swing.JFrame {
     DFF dff;
+    Map<String, JTextComponent> fields = new HashMap<>();
     
     boolean maxSizeCheckBoxAutoEnabled = false;
     /**
@@ -39,8 +44,9 @@ public class DeepFileFind extends javax.swing.JFrame {
         DFFShutdownHook dffsh = new DFFShutdownHook();
         dffsh.app = this;
         Runtime.getRuntime().addShutdownHook(dffsh);
+        fields.put("max_size", this.maxSizeTextField);
+        fields.put("min_size", this.minSizeTextField);
     }
-
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -162,7 +168,28 @@ public class DeepFileFind extends javax.swing.JFrame {
 
         minSizeCheckBox.setText("Min");
 
+        minSizeTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                minSizeTextFieldActionPerformed(evt);
+            }
+        });
+        minSizeTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                minSizeTextFieldKeyTyped(evt);
+            }
+        });
+
         maxSizeTextField.setText("2048000");
+        maxSizeTextField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                maxSizeTextFieldActionPerformed(evt);
+            }
+        });
+        maxSizeTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                maxSizeTextFieldKeyTyped(evt);
+            }
+        });
 
         maxSizeCheckBox.setText("Max");
         maxSizeCheckBox.addActionListener(new java.awt.event.ActionListener() {
@@ -345,8 +372,34 @@ public class DeepFileFind extends javax.swing.JFrame {
     }//GEN-LAST:event_contentTextFieldKeyTyped
 
     private void maxSizeCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_maxSizeCheckBoxActionPerformed
-        maxSizeCheckBoxAutoEnabled = false;
+        
     }//GEN-LAST:event_maxSizeCheckBoxActionPerformed
+
+    private void maxSizeTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_maxSizeTextFieldActionPerformed
+        
+    }//GEN-LAST:event_maxSizeTextFieldActionPerformed
+
+    private void minSizeTextFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_minSizeTextFieldActionPerformed
+        this.minSizeCheckBox.setSelected(true);
+    }//GEN-LAST:event_minSizeTextFieldActionPerformed
+
+    private void minSizeTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_minSizeTextFieldKeyTyped
+        if (this.minSizeTextField.getText().trim().length()==0) {
+            this.minSizeCheckBox.setSelected(false);
+        }
+        else {
+            this.minSizeCheckBox.setSelected(true);
+        }
+    }//GEN-LAST:event_minSizeTextFieldKeyTyped
+
+    private void maxSizeTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_maxSizeTextFieldKeyTyped
+        if (this.maxSizeTextField.getText().trim().length()==0) {
+            this.maxSizeCheckBox.setSelected(false);
+        }
+        else {
+            this.maxSizeCheckBox.setSelected(true);
+        }
+    }//GEN-LAST:event_maxSizeTextFieldKeyTyped
 
     /**
      * @param args the command line arguments
@@ -436,7 +489,24 @@ public class DeepFileFind extends javax.swing.JFrame {
         }
     }
     
+    public void markEntry (String fieldName, boolean good) {
+        Color color = Color.white;
+        if (!good) color = Color.yellow;
+        JTextComponent component = this.fields.get(fieldName);
+        if (component!=null) component.setBackground(color);
+        //if (fieldName == "max_size") this.maxSizeTextField.setBackground(color);
+    }
+    public void markAllEntries(boolean good) {
+        Color color = Color.white;
+        if (!good) color = Color.yellow;
+        for (String key : this.fields.keySet()) {
+            JTextComponent component = this.fields.get(key);
+            if (component!=null) component.setBackground(color);
+        }
+    }
     void executeSearch() {
+        //markEntry("max_size", true);
+        this.markAllEntries(true);
         //this.resultsTable.removeAll(); //doesn't work
         DefaultTableModel model = (DefaultTableModel)resultsTable.getModel();
         model.setRowCount(0);        
@@ -451,9 +521,14 @@ public class DeepFileFind extends javax.swing.JFrame {
         dff.options.put("content_enable", this.contentCheckBox.isSelected()?"true":"false");
         dff.options.put("include_folders_as_results_enable", this.foldersCheckBox.isSelected() ? "true" : "false");
         dff.options.put("recursive_enable", this.recursiveCheckBox.isSelected() ? "true" : "false");
+        dff.options.put("min_size_enable", this.minSizeCheckBox.isSelected() ? "true" : "false");
+        dff.options.put("min_size", this.minSizeTextField.getText());
+        dff.options.put("max_size_enable", this.maxSizeCheckBox.isSelected() ? "true" : "false");
+        dff.options.put("max_size", this.maxSizeTextField.getText());
         
         DFFMatchEventListener mListener = new DFFMatchEventListener();
         mListener.table = this.resultsTable;
+        mListener.app = this;
         mListener.statusTextField = this.statusTextField;
         dff.registerOnGeekEventListener(mListener); 
         dff.executeSearch(); 

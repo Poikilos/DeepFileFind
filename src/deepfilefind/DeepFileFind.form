@@ -351,11 +351,19 @@
               </Properties>
             </Component>
             <Component class="javax.swing.JTextField" name="minSizeTextField">
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="minSizeTextFieldActionPerformed"/>
+                <EventHandler event="keyTyped" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="minSizeTextFieldKeyTyped"/>
+              </Events>
             </Component>
             <Component class="javax.swing.JTextField" name="maxSizeTextField">
               <Properties>
                 <Property name="text" type="java.lang.String" value="2048000"/>
               </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="maxSizeTextFieldActionPerformed"/>
+                <EventHandler event="keyTyped" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="maxSizeTextFieldKeyTyped"/>
+              </Events>
             </Component>
             <Component class="javax.swing.JCheckBox" name="maxSizeCheckBox">
               <Properties>

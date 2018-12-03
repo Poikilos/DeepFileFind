@@ -17,6 +17,7 @@ import javax.swing.table.DefaultTableModel;
 public class DFFMatchEventListener implements OnMatchEventListener {
     JTable table = null;
     JTextField statusTextField = null;
+    DeepFileFind app = null;
     @Override
     public void onMatchEvent(Map<String, String> result) {
         if (table == null)
@@ -29,6 +30,13 @@ public class DFFMatchEventListener implements OnMatchEventListener {
     public void setStatus(String s) {
         if (statusTextField != null) statusTextField.setText(s);
         else System.err.println(s);
+    }
+
+    @Override
+    public void markBadEntry(String fieldname) {
+        if (app != null) {
+            app.markEntry(fieldname, false);
+        }
     }
     
 }

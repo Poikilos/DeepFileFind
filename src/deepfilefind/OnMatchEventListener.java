@@ -18,4 +18,6 @@ public interface OnMatchEventListener {
     void onMatchEvent(Map<String, String> result);
 
     public void setStatus(String nothing_to_do);
+
+    public void markBadEntry(String fieldName);
 }

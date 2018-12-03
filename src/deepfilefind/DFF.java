@@ -35,6 +35,8 @@ public class DFF {
     private String opt_name_string = null;
     private String opt_name_lower = null;
     private String opt_content_string = null;
+    private long opt_min_size;
+    private long opt_max_size;
     List<String> locations = new ArrayList<>();
     private Thread searchThread = null;
     public boolean enable = false;  // running
@@ -189,6 +191,76 @@ public class DFF {
         }
         return name.contains(filter);
     }
+    
+    //formats accepted: 1KB, 1K, 1MB, 1M, 1G, 1GB (case insensitive, space allowed)
+    //throws exception if any bad number given including null param
+    public Long toByteCount(String readableSize) {
+        long ret = -1;
+        long m = 1; //multiplier
+        String sizeLower = readableSize.toLowerCase();
+        int s_i = sizeLower.length(); //string portion's length
+        if (sizeLower.endsWith("k")) {
+            s_i = sizeLower.length() - 1;
+            m = 1024;
+        }
+        else if (sizeLower.endsWith("kb")) {
+            s_i = sizeLower.length() - 2;
+            m = 1024;
+        }
+        else if (sizeLower.endsWith("m")) {
+            s_i = sizeLower.length() - 1;
+            m = 1048576;
+        }
+        else if (sizeLower.endsWith("mb")) {
+            s_i = sizeLower.length() - 2;
+            m = 1048576;
+        }
+        else if (sizeLower.endsWith("g")) {
+            s_i = sizeLower.length() - 1;
+            m = 1073741824;
+        }
+        else if (sizeLower.endsWith("gb")) {
+            s_i = sizeLower.length() - 2;
+            m = 1073741824;
+        }
+        else if (sizeLower.endsWith("t")) {
+            //s_i = sizeLower.length() - 1;
+            //m = 1099511627776;  // number is too large for long int
+            throw new NumberFormatException("terabytes not accepted");
+        }
+        else if (sizeLower.endsWith("tb")) {
+            //s_i = sizeLower.length() - 2;
+            //m = 1099511627776;  // number is too large for long int
+            throw new NumberFormatException("terabytes not accepted");
+        }
+        else if (sizeLower.endsWith("bytes")) {
+            if (sizeLower.endsWith("kilobytes")) {
+                s_i = sizeLower.length() - 9;
+                m = 1024;
+            }
+            else if (sizeLower.endsWith("megabytes")) {
+                s_i = sizeLower.length() - 9;
+                m = 1048576;
+            }
+            else if (sizeLower.endsWith("gigabytes")) {
+                s_i = sizeLower.length() - 9;
+                m = 1073741824;
+            }
+            else if (sizeLower.endsWith("terabytes")) {
+                //s_i = sizeLower.length() - 9;
+                //m = 1099511627776;  // number is too large for long int
+                throw new NumberFormatException("terabytes not accepted");
+            }
+            else {
+                // assume bytes
+                s_i = sizeLower.length() - 5;
+                m = 1;
+            }
+        }
+        // else assume all numbers (bytes) so leave s_i and m at defaults
+        ret = Long.parseLong(readableSize.substring(0,s_i).trim()) * m;
+        return ret;
+    }
   
     // My Asynchronous task
     public void executeSearch() {
@@ -236,6 +308,48 @@ public class DFF {
                 opt_ifar_enable = true;
             }
         }
+        opt_min_size = 0;
+        String opt_min_size_s = options.get("min_size");
+        if (!is_truthy(options.get("min_size_enable"))) opt_min_size_s = null;
+        else if (opt_min_size_s != null) {
+            try {
+                opt_min_size = toByteCount(opt_min_size_s);
+                System.out.println("max_size: " + Long.toString(opt_min_size));
+            }
+            catch (NumberFormatException ex) {
+                opt_min_size = 0;
+                if (mListener != null) {
+                    mListener.markBadEntry("min_size");
+                    mListener.setStatus("Minimum size is typed incorrectly.");
+                    return;
+                }
+            }
+        }
+        
+        opt_max_size = Long.MAX_VALUE;
+        String opt_max_size_s = options.get("max_size");
+        if (!is_truthy(options.get("max_size_enable"))) opt_max_size_s = null;
+        else if (opt_max_size_s != null) {
+            try {
+                opt_max_size = toByteCount(opt_max_size_s);
+                System.out.println("max_size: " + Long.toString(opt_max_size));
+            }
+            catch (NumberFormatException ex) {
+                opt_max_size = Long.MAX_VALUE;
+                if (mListener != null) {
+                    mListener.markBadEntry("max_size");
+                    mListener.setStatus("Maximum size is typed incorrectly");
+                    return;
+                }
+            }
+        }
+        
+        if (opt_max_size < opt_min_size) {
+            mListener.markBadEntry("min_size");
+            mListener.markBadEntry("max_size");
+            mListener.setStatus("Maximum size must be greater than or equal to minimum.");
+            return;
+        }
         //System.out.println("opt_ifar_enable: " + (opt_ifar_enable?"true":"false"));
         //if (opt_name_lower == null) {
             // check if listener is registered.
@@ -269,7 +383,8 @@ public class DFF {
                     executeSearchRecursively(major_di, 0);
                 }
             }
-            String msg = "Finished searching " + Integer.toString(location_paths.length) + " path(s).";
+            String msg = "Finished searching " + Integer.toString(location_paths.length) + " path(s)";
+            msg += " (" + Long.toString(match_count) + " result(s))";
             if (!enable) msg = "You cancelled the search.";
             if (mListener != null) {
                 mListener.setStatus(msg);
@@ -303,6 +418,8 @@ public class DFF {
             }            
             if (!found) return false;
         }
+        if (this_fi.length() < this.opt_min_size) return false;
+        if (this_fi.length() > this.opt_max_size) return false;
         // TODO: check:
 //        modified_start_date_enable:false
 //        modified_start_time_enable:true
@@ -313,10 +430,6 @@ public class DFF {
 //        content_enable:false
 //        recursive_enable:true
 //        content_string:book
-//        min_size_enable:false
-//        max_size_enable:false
-//        min_size:
-//        max_size:2048000
         
         return true;
     }
