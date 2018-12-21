@@ -6,12 +6,25 @@
 package deepfilefind;
 
 import java.awt.Color;
+import java.awt.Desktop;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.JTextComponent;
 
@@ -28,6 +41,14 @@ public class DeepFileFind extends javax.swing.JFrame {
      * Creates new form DeepFileFind
      */
     public DeepFileFind() {
+        
+        //Add listener to components that can bring up popup menus.
+        //MouseListener popupListener = new PopupListener();
+        //this.resultsTable.addMouseListener(popupListener);
+        //output.addMouseListener(popupListener);
+        //menuBar.addMouseListener(popupListener);   
+        
+        
         initComponents();
         this.setTitle("DeepFileFind");
         dff = new DFF();
@@ -99,6 +120,11 @@ public class DeepFileFind extends javax.swing.JFrame {
                 "Path", "Ext", "Modified", "Created", "Name"
             }
         ));
+        resultsTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                resultsTableMousePressed(evt);
+            }
+        });
         jScrollPane1.setViewportView(resultsTable);
         if (resultsTable.getColumnModel().getColumnCount() > 0) {
             resultsTable.getColumnModel().getColumn(0).setPreferredWidth(400);
@@ -401,6 +427,45 @@ public class DeepFileFind extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_maxSizeTextFieldKeyTyped
 
+    private void resultsTableMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_resultsTableMousePressed
+        JTable source = (JTable)evt.getSource();
+        int row = source.rowAtPoint( evt.getPoint() );
+        int col = source.columnAtPoint( evt.getPoint() );
+
+        if (! source.isRowSelected(row))
+            source.changeSelection(row, col, false, false);
+        JTable t = (JTable)evt.getSource();
+        JMenuItem menuItem;
+        if ((evt.getClickCount() == 2) && (evt.getButton() == MouseEvent.BUTTON1)) {
+            String sub_path = (String)this.resultsTable.getValueAt(row, col);
+            //System.out.println("double-clicked item " + sub_path);
+            File sub = new File(sub_path);
+            //if (sub.exists()) {
+            try {
+                Desktop.getDesktop().open(sub);
+            } catch (IOException ex) {
+                Logger.getLogger(DeepFileFind.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            //}
+            //else {
+            //    this.statusTextField.setText("ERROR: Could not find file " + sub.getAbsolutePath());
+            //}
+
+        }
+        else if (evt.getButton() == MouseEvent.BUTTON3) {
+            JPopupMenu popup = new JPopupMenu();
+            menuItem = new JMenuItem("Open Containing Directory");
+            menuItem.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent evt) {
+                    clickOpenContainingActionPerformed(evt);
+                }
+            });
+            popup.add(menuItem);
+            MouseListener popupListener = new PopupListener();
+            popup.show(evt.getComponent(), evt.getX(), evt.getY());
+        }
+    }//GEN-LAST:event_resultsTableMousePressed
+
     /**
      * @param args the command line arguments
      */
@@ -532,5 +597,71 @@ public class DeepFileFind extends javax.swing.JFrame {
         mListener.statusTextField = this.statusTextField;
         dff.registerOnGeekEventListener(mListener); 
         dff.executeSearch(); 
+    }
+    
+    private void clickOpenContainingActionPerformed(java.awt.event.ActionEvent evt) {                                              
+        // JMenuItem me = evt.getSource();
+        int row = this.resultsTable.getSelectedRow();
+        int col = this.resultsTable.getSelectedColumn();
+        String sub_path = (String)this.resultsTable.getValueAt(row, col);
+        //System.out.println("clicked popup item " + sub_path);
+        File sub = new File(sub_path);
+        File parent = sub.getParentFile();
+        //if (parent.exists()) {
+        try {
+            Desktop.getDesktop().open(parent);
+        } catch (IOException ex) {
+            Logger.getLogger(DeepFileFind.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        //}
+        //else {
+        //    this.statusTextField.setText("ERROR: Could not find path containing " + sub.getAbsolutePath());
+        //}
+    }
+
+    //private static class PopupListener implements MouseListener { //suggested by NetBeans
+    private class PopupListener extends MouseAdapter {
+        // see also <https://docs.oracle.com/javase/tutorial/uiswing/components/menu.html#popup>
+        //JPopupMenu popup;
+
+            /*
+        private PopupListener() { //JPopupMenu popup
+            //Create the popup menu.
+            popup = new JPopupMenu();
+            JMenuItem menuItem;
+            menuItem = new JMenuItem("A popup menu item");
+            menuItem.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent evt) {
+                    clickOpenContainingActionPerformed(evt);
+                }
+            });
+            popup.add(menuItem);
+            menuItem = new JMenuItem("Another popup menu item");
+            menuItem.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent evt) {
+                    clickOpenContainingActionPerformed(evt);
+                }
+            });
+            popup.add(menuItem);
+        }
+*/
+        
+        
+        /*
+        public void mousePressed(MouseEvent e) {
+            maybeShowPopup(e);
+        }
+
+        public void mouseReleased(MouseEvent e) {
+            maybeShowPopup(e);
+        }
+
+        private void maybeShowPopup(MouseEvent e) {
+            if (e.isPopupTrigger()) {
+                popup.show(e.getComponent(),
+                           e.getX(), e.getY());
+            }
+        }
+        */
     }
 }
